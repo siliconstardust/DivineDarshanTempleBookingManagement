@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Blueprint
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson import ObjectId
@@ -13,6 +13,14 @@ env_path = pathlib.Path(__file__).resolve().parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
 app = Flask(__name__)
+
+# Vercel Services: backend is mounted at routePrefix (e.g. /_/backend). Override with API_URL_PREFIX.
+if "API_URL_PREFIX" in os.environ:
+    API_URL_PREFIX = os.environ["API_URL_PREFIX"].strip().rstrip("/")
+elif os.environ.get("VERCEL"):
+    API_URL_PREFIX = "/_/backend"
+else:
+    API_URL_PREFIX = ""
 
 # Configure CORS for production
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -28,6 +36,8 @@ bcrypt = Bcrypt(app)
 
 MONGO_URI = os.getenv("MONGO_URI")
 print(f"MONGO_URI loaded: {'Yes' if MONGO_URI else 'NO - check .env file!'}")
+_prefix_display = repr(API_URL_PREFIX) if API_URL_PREFIX else "none (routes at /login, /menu, ...)"
+print(f"API_URL_PREFIX: {_prefix_display}")
 
 try:
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
@@ -62,7 +72,9 @@ def serialize_doc(doc):
         doc['_id'] = str(doc['_id'])
     return doc
 
-@app.route('/login', methods=['POST'])
+bp = Blueprint("api", __name__)
+
+@bp.route('/login', methods=['POST'])
 def login():
     data = request.json
     email = data.get('email')
@@ -74,7 +86,7 @@ def login():
     
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-@app.route('/menu', methods=['GET'])
+@bp.route('/menu', methods=['GET'])
 def get_menu():
     items = []
     try:
@@ -83,7 +95,7 @@ def get_menu():
         print("Error fetching menu:", e)
     return jsonify(items), 200
 
-@app.route('/menu', methods=['POST'])
+@bp.route('/menu', methods=['POST'])
 def add_menu():
     data = request.json
     item = {
@@ -97,7 +109,7 @@ def add_menu():
     item['_id'] = str(result.inserted_id)
     return jsonify(item), 201
 
-@app.route('/menu/<id>', methods=['PUT'])
+@bp.route('/menu/<id>', methods=['PUT'])
 def update_menu(id):
     data = request.json
     update_data = {}
@@ -109,12 +121,12 @@ def update_menu(id):
     db.menus.update_one({"_id": ObjectId(id)}, {"$set": update_data})
     return jsonify({"success": True}), 200
 
-@app.route('/menu/<id>', methods=['DELETE'])
+@bp.route('/menu/<id>', methods=['DELETE'])
 def delete_menu(id):
     db.menus.delete_one({"_id": ObjectId(id)})
     return jsonify({"success": True}), 200
 
-@app.route('/orders', methods=['GET'])
+@bp.route('/orders', methods=['GET'])
 def get_orders():
     orders = []
     try:
@@ -123,7 +135,7 @@ def get_orders():
         print("Error fetching orders:", e)
     return jsonify(orders), 200
 
-@app.route('/orders', methods=['POST'])
+@bp.route('/orders', methods=['POST'])
 def create_order():
     data = request.json
     items = data.get("items", [])
@@ -142,7 +154,7 @@ def create_order():
     order["_id"] = str(result.inserted_id)
     return jsonify(order), 201
 
-@app.route('/orders/<id>', methods=['PUT'])
+@bp.route('/orders/<id>', methods=['PUT'])
 def update_order(id):
     data = request.json
     status = data.get("status")
@@ -151,15 +163,13 @@ def update_order(id):
         return jsonify({"success": True}), 200
     return jsonify({"error": "Invalid status"}), 400
 
-@app.route('/sales/today', methods=['GET'])
+@bp.route('/sales/today', methods=['GET'])
 def daily_sales():
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
     orders = []
     total_menu_items = 0
     try:
-        # Assuming created_at is saved as a date object. If it's a string, this query needs adjustment,
-        # but our add_menu creates it as datetime.now().
         orders = list(db.orders.find({"created_at": {"$gte": today_start}}))
         total_menu_items = db.menus.count_documents({})
     except Exception as e:
@@ -174,7 +184,7 @@ def daily_sales():
         "total_menu_items": total_menu_items
     }), 200
 
-@app.route('/seed', methods=['POST'])
+@bp.route('/seed', methods=['POST'])
 def seed_menu():
     """Seed the database with sample menu items."""
     if db is None:
@@ -195,7 +205,6 @@ def seed_menu():
         {"item_name": "Fresh Lime Soda", "price": 35.0, "category": "Beverages", "available": True, "created_at": datetime.now(timezone.utc)},
     ]
 
-    # Clear existing menu items and re-seed
     db.menus.delete_many({})
     result = db.menus.insert_many(sample_items)
     
@@ -204,8 +213,9 @@ def seed_menu():
         "message": f"Seeded {len(result.inserted_ids)} menu items into canteenDB"
     }), 201
 
+app.register_blueprint(bp, url_prefix=API_URL_PREFIX or None)
+
 if __name__ == '__main__':
-    # Use environment variables for production
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_ENV") != "production"
     app.run(debug=debug, host="0.0.0.0", port=port)

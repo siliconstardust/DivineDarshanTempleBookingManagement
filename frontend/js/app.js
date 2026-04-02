@@ -1,10 +1,11 @@
-// Local dev: Flask on :5000. Production (e.g. Vercel): same origin, API on this host.
+// Local dev: Flask on :5000. Vercel Services: API service routePrefix must match vercel.json.
+const VERCEL_API_PREFIX = '/_/backend';
 const API_BASE = (() => {
   const h = window.location.hostname;
   if (h === 'localhost' || h === '127.0.0.1') {
     return 'http://localhost:5000';
   }
-  return '';
+  return VERCEL_API_PREFIX;
 })();
 
 function showToast(message, type = 'success') {
