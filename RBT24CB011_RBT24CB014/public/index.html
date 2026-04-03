@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Repository</title>
+    <!-- Modern Typeface -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Ionicons for modern icons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <header class="navbar glassmorphism">
+        <div class="logo">
+            <ion-icon name="restaurant"></ion-icon>
+            <h1>Recipe<span class="highlight">Repo</span></h1>
+        </div>
+        <div class="search-container">
+            <ion-icon name="search-outline"></ion-icon>
+            <input type="text" id="searchInput" placeholder="Search recipes by name...">
+        </div>
+        <button id="addRecipeBtn" class="primary-btn">
+            <ion-icon name="add-circle-outline"></ion-icon> Add Recipe
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Filters & Navigation -->
+        <section class="filters-section">
+            <div class="categories" id="categoryFilters">
+                <button class="filter-btn active" data-category="All">All Recipes</button>
+                <button class="filter-btn" data-category="Veg">Veg</button>
+                <button class="filter-btn" data-category="Non-Veg">Non-Veg</button>
+                <button class="filter-btn" data-category="Dessert">Desserts</button>
+            </div>
+            <div class="favorites-toggle">
+                <label class="switch">
+                    <input type="checkbox" id="favoriteToggle">
+                    <span class="slider round"></span>
+                </label>
+                <span>Show Favorites Only</span>
+            </div>
+        </section>
+
+        <!-- Recipe Grid displays cards -->
+        <section class="recipe-grid" id="recipeGrid">
+            <!-- Loading indicator -->
+            <div class="loading">Loading delicious recipes...</div>
+        </section>
+    </main>
+
+    <!-- App Modal (Add/Edit Recipe) -->
+    <div id="recipeModal" class="modal hidden">
+        <div class="modal-content glassmorphism">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Recipe</h2>
+                <button class="close-btn" id="closeModalBtn">&times;</button>
+            </div>
+            <form id="recipeForm">
+                <input type="hidden" id="recipeId">
+                
+                <div class="form-group">
+                    <label for="recipeName">Recipe Name</label>
+                    <input type="text" id="recipeName" required placeholder="E.g., Classic Margherita Pizza">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="recipeCategory">Category</label>
+                        <select id="recipeCategory" required>
+                            <option value="" disabled selected>Select Category</option>
+                            <option value="Veg">Vegetarian</option>
+                            <option value="Non-Veg">Non-Vegetarian</option>
+                            <option value="Dessert">Dessert</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cookingTime">Cooking Time (minutes)</label>
+                        <input type="number" id="cookingTime" min="0" placeholder="E.g., 30">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="recipeCuisine">Cuisine</label>
+                        <select id="recipeCuisine">
+                            <option value="Other" selected>Other</option>
+                            <option value="Indian">Indian</option>
+                            <option value="Maharashtrian">Maharashtrian</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="recipeDifficulty">Difficulty</label>
+                        <select id="recipeDifficulty">
+                            <option value="Easy">Easy</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="Hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipeIngredients">Ingredients (one per line)</label>
+                    <textarea id="recipeIngredients" rows="4" required placeholder="2 cups flour&#10;1 cup water&#10;1 tsp salt"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipeSteps">Cooking Steps (one per line)</label>
+                    <textarea id="recipeSteps" rows="5" required placeholder="Mix dry ingredients.&#10;Add water and knead.&#10;Bake at 200°C for 30 minutes."></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="secondary-btn" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Recipe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
